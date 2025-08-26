@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  web:
+    image: deepwhoo/devops-build:latest
+    container_name: devops-app
+    ports:
+      - "80:80"
+    restart: always
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
