@@ -1,27 +1,20 @@
-# Step 1: Build the React app
-FROM node:18 AS build
-
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-
-# Step 2: Serve with Nginx
+# Use Nginx to serve the pre-built React app
 FROM nginx:alpine
 
-# Remove default Nginx page
-RUN rm -rf /usr/share/nginx/html/*
+WORKDIR /usr/share/nginx/html
 
-# Copy build files
-COPY --from=build /app/build /usr/share/nginx/html
+# Remove the default Nginx page
+RUN rm -rf ./*
+
+# Copy the pre-built React build folder directly
+COPY build/ .
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
-# Add healthcheck
+# Add a healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -f http://localhost/ || exit 1
 
