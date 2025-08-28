@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-build-deployment
+  labels:
+    app: devops-build
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devops-build
+  template:
+    metadata:
+      labels:
+        app: devops-build
+    spec:
+      containers:
+        - name: devops-build
+          image: deepwhoo/devops-build:latest
+          ports:
+            - containerPort: 80
