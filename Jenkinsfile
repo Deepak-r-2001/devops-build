@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB = "your-dockerhub-username/devops-build"  // Replace with your DockerHub repo
+        DOCKER_HUB = "deepwhoo/devops-build"  // Replace with your DockerHub repo
         AWS_REGION = "ap-south-1"
         CLUSTER_NAME = "devops-build-cluster"
         K8S_DIR = "k8s"
