@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB = "deepwhoo/devops-build"  // Replace with your DockerHub repo
+        DOCKER_HUB = "deepwhoo/devops-build"       // Your DockerHub repo
         AWS_REGION = "ap-south-1"
         CLUSTER_NAME = "devops-build-cluster"
         K8S_DIR = "k8s"
@@ -12,18 +12,19 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'dev', url: 'https://github.com/sriram-R-krishnan/devops-build.git'
+                git branch: 'dev', url: 'https://github.com/Deepak-r-2001/devops-build.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh """
-                        echo "Building Docker image..."
-                        docker build -t $DOCKER_HUB:${BUILD_NUMBER} .
+                    sh '''
+                        set -e
+                        echo "🚀 Building Docker image..."
+                        docker build --no-cache -t $DOCKER_HUB:${BUILD_NUMBER} .
                         docker tag $DOCKER_HUB:${BUILD_NUMBER} $DOCKER_HUB:latest
-                    """
+                    '''
                 }
             }
         }
@@ -31,54 +32,63 @@ pipeline {
         stage('Login to DockerHub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
+                    sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    """
+                    '''
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh """
+                sh '''
+                    set -e
                     docker push $DOCKER_HUB:${BUILD_NUMBER}
                     docker push $DOCKER_HUB:latest
-                """
+                '''
             }
         }
 
         stage('Configure Kubeconfig') {
             steps {
-                sh """
-                    aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-                """
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-eks-creds']]) {
+                    sh '''
+                        set -e
+                        echo "🔧 Updating kubeconfig for EKS..."
+                        aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+                    '''
+                }
             }
         }
 
         stage('Deploy to EKS') {
             steps {
                 script {
-                    sh """
+                    sh '''
+                        set -e
+                        echo "🚀 Deploying to EKS..."
                         kubectl apply -f $K8S_DIR/
                         kubectl rollout status deployment/devops-build-deployment
-                    """
+                        echo "✅ Deployment successful!"
+                        echo "🌍 App URL: $(kubectl get svc devops-build-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+                    '''
                 }
             }
         }
 
         stage('Clean Up Docker Images') {
             steps {
-                sh """
+                sh '''
                     docker rmi $DOCKER_HUB:${BUILD_NUMBER} || true
                     docker rmi $DOCKER_HUB:latest || true
-                """
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "✅ Deployment successful! Access your app at: http://a88b13b8a168443a5862667496ea0cf4-869908835.ap-south-1.elb.amazonaws.com"
+            echo "✅ Build & Deployment successful!"
         }
         failure {
             echo "❌ Deployment failed. Check Jenkins logs for details."
