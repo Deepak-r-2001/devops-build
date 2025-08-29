@@ -51,11 +51,10 @@ pipeline {
 
         stage('Configure Kubeconfig') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-eks-creds']]) {
+                withAWS(credentials: 'aws-jenkins-creds', region: "${AWS_REGION}") {
                     sh '''
-                        set -e
-                        echo "🔧 Updating kubeconfig for EKS..."
-                        aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+                        mkdir -p $HOME/.kube
+                        aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_REGION} --alias ${CLUSTER_NAME} --kubeconfig $HOME/.kube/config
                     '''
                 }
             }
